@@ -1,5 +1,13 @@
 {
-  "version":2,
-  "builds": [{"src": "./app.js", "use": "@vercel/node"}],
-  "routes": [{"src": "/(.*)", "dest":"/"}]
+  "version": 2,
+  "builds": [
+    { "src": "app.js", "use": "@vercel/node" },
+    { "src": "client/package.json", "use": "@vercel/static-build" }
+  ],
+  "routes": [
+    // API routes go to app.js
+    { "src": "/api/(.*)", "dest": "/app.js" },
+    // All other routes go to React frontend
+    { "src": "/(.*)", "dest": "/client/build/index.html" }
+  ]
 }

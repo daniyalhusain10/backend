@@ -4,28 +4,26 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const authRoutes = require('./components/authRoutes');
-const adminRoutes = require("./components/adminRoutes");
-const productRoutes = require("./components/createUpdateProductRoutes");
-const cartRoutes = require("./components/CartRoutes");
-const orderRoutes = require("./components/orderRoutes")
-const showOrderRoutes = require("./components/showOrderRoutes.js")
-const standardRoutes = require("./components/standardProductsRutes.js")
+const adminRoutes = require('./components/adminRoutes');
+const productRoutes = require('./components/createUpdateProductRoutes');
+const cartRoutes = require('./components/CartRoutes');
+const orderRoutes = require('./components/orderRoutes');
+const showOrderRoutes = require('./components/showOrderRoutes');
+const standardRoutes = require('./components/standardProductsRoutes'); // fixed typo
 require('dotenv').config();
 
-const port = process.env.PORT || 5000;
-
+// Allowed origins
 const allowedOrigins = [
   'http://localhost:5173', // local dev
-  'https://fontend-sigma.vercel.app' // production Vercel frontend
+  'https://fontend-sigma.vercel.app' // production frontend
 ];
 
+// CORS setup
 app.use(cors({
   origin: function(origin, callback) {
-    // allow requests with no origin (like Postman)
-    if (!origin) return callback(null, true); 
+    if (!origin) return callback(null, true); // allow Postman, curl
     if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
-      return callback(new Error(msg), false);
+      return callback(new Error('CORS policy does not allow access from this origin'), false);
     }
     return callback(null, true);
   },
@@ -36,33 +34,28 @@ app.use(cors({
 
 app.use(cookieParser());
 
+// Multer / File Upload Routes FIRST
+app.use('/api/products', productRoutes);
 
-// ✅ 2. Multer/File Upload Routes FIRST
-// These must come before generic express.json/urlencoded parsers.
-app.use('/api/products', productRoutes); 
-
-
-// ✅ 3. Generic Body Parsers SECOND
-// These parsers will only run on routes *not* handled above (like Auth, Cart, Checkout)
-// which expect JSON or URL-encoded data.
+// Generic body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Other routes
 app.use('/api/standard', standardRoutes);
-// ✅ 4. Other Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', adminRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/show-orders', showOrderRoutes);
 
-// ✅ MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('✅ Connected to MongoDB Atlas'))
-    .catch((err) => console.error('❌ MongoDB connection error:', err));
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ Connected to MongoDB Atlas'))
+.catch(err => console.error('❌ MongoDB connection error:', err));
 
-app.listen(port, () => {
-    console.log(`🚀 Server is running on port: ${port}`);
-});
-
+// Export app for Vercel serverless function
 module.exports = app;

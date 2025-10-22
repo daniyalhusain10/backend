@@ -16,7 +16,7 @@ const port = process.env.PORT || 5000;
 
 const allowedOrigins = [
   'http://localhost:5173', // local dev
-  'https://68f8efcaae61569f35b94e34--profound-starlight-7d300f.netlify.app' // production Netlify frontend
+  'https://fontend-sigma.vercel.app' // production Vercel frontend
 ];
 
 app.use(cors({

@@ -15,6 +15,29 @@ require('dotenv').config();
 const port = process.env.PORT || 5000;
 
 
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected) {
+    console.log('🟢 Using existing MongoDB connection');
+    return;
+  }
+  try {
+    const db = await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      maxPoolSize: 10,
+    });
+    isConnected = db.connections[0].readyState;
+    console.log('✅ MongoDB connected successfully');
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error.message);
+  }
+};
+
+// Call connection (Vercel compatible)
+connectDB();
+
 const allowedOrigins = [
   'http://localhost:5173', // local dev
 'https://fontend-sigma.vercel.app'
@@ -57,10 +80,6 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/show-orders', showOrderRoutes);
 
-// ✅ MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('✅ Connected to MongoDB Atlas'))
-    .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 app.listen(port, () => {
     console.log(`🚀 Server is running on port: ${port}`);

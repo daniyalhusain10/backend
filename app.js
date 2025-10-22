@@ -3,41 +3,49 @@ const app = express();
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
+require('dotenv').config();
+
+// Routes
 const authRoutes = require('./components/authRoutes');
 const adminRoutes = require('./components/adminRoutes');
 const productRoutes = require('./components/createUpdateProductRoutes');
 const cartRoutes = require('./components/CartRoutes');
 const orderRoutes = require('./components/orderRoutes');
 const showOrderRoutes = require('./components/showOrderRoutes');
-const standardRoutes = require('./components/standardProductsRoutes'); // fixed typo
-require('dotenv').config();
+const standardRoutes = require('./components/standardProductsRoutes');
 
-// Allowed origins
-const allowedOrigins = [
-  'http://localhost:5173', // local dev
-  'https://fontend-sigma.vercel.app' // production frontend
-];
+// MongoDB cache for Vercel
+let cached = global.mongoose;
+if (!cached) cached = global.mongoose = { conn: null, promise: null };
+async function dbConnect() {
+  if (cached.conn) return cached.conn;
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    }).then(m => m);
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
 
-// CORS setup
+// CORS
+const allowedOrigins = ['http://localhost:5173', 'https://frontend-sigma.vercel.app'];
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true); // allow Postman, curl
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('CORS policy does not allow access from this origin'), false);
-    }
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (!allowedOrigins.includes(origin)) return callback(new Error('CORS policy does not allow access'), false);
     return callback(null, true);
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
+  credentials: true
 }));
 
 app.use(cookieParser());
 
-// Multer / File Upload Routes FIRST
+// Multer / file uploads
 app.use('/api/products', productRoutes);
 
-// Generic body parsers
+// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -49,13 +57,4 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/show-orders', showOrderRoutes);
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('✅ Connected to MongoDB Atlas'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
-
-// Export app for Vercel serverless function
-module.exports = app;
+module.exports = { app, dbConnect };

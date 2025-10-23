@@ -2,10 +2,11 @@ const asyncHandler = require('express-async-handler');
 const Product = require('../models/productModel.js');
 const cloudinary = require('cloudinary').v2;
 const mongoose = require("mongoose");
-
+const mongoDb = require("../utils/mongDb.js")
 // -------------------------------------------
 // GET all products
 const getProducts = asyncHandler(async (req, res) => {
+  await mongoDb();
   const products = await Product.find({}).populate('user', 'username email');
   res.json({ products });
 });

@@ -14,7 +14,6 @@ require('dotenv').config();
 
 const port = process.env.PORT || 5000;
 
-
 let isConnected = false;
 
 const connectDB = async () => {
@@ -22,21 +21,27 @@ const connectDB = async () => {
     console.log('🟢 Using existing MongoDB connection');
     return;
   }
+
   try {
     const db = await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      maxPoolSize: 10,
+      maxPoolSize: 20, // Increase pool size for concurrent requests
+      serverSelectionTimeoutMS: 30000, // Increase timeout for server selection
+      socketTimeoutMS: 45000,          // Increase socket timeout
     });
-    isConnected = db.connections[0].readyState;
+
+    isConnected = db.connections[0].readyState === 1;
     console.log('✅ MongoDB connected successfully');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
   }
 };
 
-// Call connection (Vercel compatible)
+mongoose.set('bufferCommands', false); // Optional: disables buffering if connection isn't ready
+
 connectDB();
+
 
 const allowedOrigins = [
   'http://localhost:5173', // local dev

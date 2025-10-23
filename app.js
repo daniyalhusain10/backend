@@ -10,37 +10,10 @@ const cartRoutes = require("./components/CartRoutes");
 const orderRoutes = require("./components/orderRoutes")
 const showOrderRoutes = require("./components/showOrderRoutes.js")
 const standardRoutes = require("./components/standardProductsRutes.js")
+const connectDB = require("./utils/mongDb.js")
 require('dotenv').config();
 
 const port = process.env.PORT || 5000;
-
-let isConnected = false;
-
-const connectDB = async () => {
-  if (isConnected) {
-    console.log('🟢 Using existing MongoDB connection');
-    return;
-  }
-
-  try {
-    const db = await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      maxPoolSize: 20, // Increase pool size for concurrent requests
-      serverSelectionTimeoutMS: 30000, // Increase timeout for server selection
-      socketTimeoutMS: 45000,          // Increase socket timeout
-    });
-
-    isConnected = db.connections[0].readyState === 1;
-    console.log('✅ MongoDB connected successfully');
-  } catch (error) {
-    console.error('❌ MongoDB connection error:', error.message);
-  }
-};
-
-mongoose.set('bufferCommands', false); // Optional: disables buffering if connection isn't ready
-
-connectDB();
 
 
 const allowedOrigins = [
@@ -85,7 +58,14 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/show-orders', showOrderRoutes);
 
-
+connectDB().then(() => {
+  app.listen(port, () => {
+    console.log(`🚀 Server is running on port: ${port}`);
+  });
+}).catch((err) => {
+  console.error('❌ Failed to connect to MongoDB:', err.message);
+  process.exit(1); // Stop server if DB fails
+});
 app.listen(port, () => {
     console.log(`🚀 Server is running on port: ${port}`);
 });
